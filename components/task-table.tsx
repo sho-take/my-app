@@ -50,7 +50,7 @@ export function TaskTable() {
               <TableCell>{task.deadline}</TableCell>
               <TableCell>
                 <Badge
-                  variant={task.status === "進行中" ? "default" : task.status === "完了" ? "success" : "secondary"}
+                  variant={task.status === "進行中" ? "default" : task.status === "完了" ? "secondary" : "destructive"}
                   className={
                     task.status === "進行中"
                       ? "bg-yellow-500 text-white"
