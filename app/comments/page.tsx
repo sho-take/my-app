@@ -27,8 +27,10 @@ export default function CommentsPage() {
 
       if (error) {
         console.error("コメントの取得に失敗しました:", error.message);
+      } else if (data && Array.isArray(data)) {
+        setComments(data as Comment[]);
       } else {
-        setComments(data || []);
+        console.error("コメントデータが無効です:", data);
       }
     };
 
@@ -41,7 +43,7 @@ export default function CommentsPage() {
         { event: "*", schema: "public", table: "comments" },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            setComments((prev) => [...prev, payload.new]);
+            setComments((prev) => [...prev, payload.new as Comment]);
           }
         }
       )
