@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bell, CheckCircle, AlertCircle } from 'lucide-react'
+import { Bell, AlertCircle } from 'lucide-react'
 
 const notifications = [
   {

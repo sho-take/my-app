@@ -10,10 +10,11 @@ const LoginPage = () => {
 
   const handleLogin = async () => {
     // Supabase を使ったログイン処理
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
 
     if (error) {
       setError(`ログインに失敗しました: ${error.message}`);
