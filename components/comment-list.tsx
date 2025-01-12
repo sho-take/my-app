@@ -32,8 +32,15 @@ export function CommentList() {
         "postgres_changes",
         { event: "*", schema: "public", table: "comments" },
         (payload) => {
-          if (payload.eventType === "INSERT") {
-            setComments((prev) => [payload.new, ...prev.slice(0, 4)]);
+          if (
+            payload.new &&
+            "id" in payload.new &&
+            "author" in payload.new &&
+            "content" in payload.new &&
+            "timestamp" in payload.new &&
+            "avatar" in payload.new
+          ) {
+            setComments((prev) => [payload.new as Comment, ...prev.slice(0, 4)]);
           }
         }
       )
@@ -74,4 +81,3 @@ export function CommentList() {
     </Card>
   );
 }
-
