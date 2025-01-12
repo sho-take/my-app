@@ -1,16 +1,33 @@
-"use client"
+"use client";
 
-import { useState } from 'react'
-import { Header } from "@/components/header"
-import { Sidebar } from "@/components/sidebar"
-import { TaskList } from "@/components/task-list"
-import { ProgressTimeline } from "@/components/progress-timeline"
-import { CommentList } from "@/components/comment-list"
-import { Menu } from 'lucide-react'
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { Header } from "@/components/header";
+import { Sidebar } from "@/components/sidebar";
+import { TaskList } from "@/components/task-list";
+import { ProgressTimeline } from "@/components/progress-timeline";
+import { CommentList } from "@/components/comment-list";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsLargeScreen(window.innerWidth >= 1024);
+    };
+
+    // 初期設定
+    handleResize();
+
+    // リサイズイベントを監視
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -26,7 +43,7 @@ export default function Dashboard() {
             <Menu className="h-6 w-6" />
           </Button>
         </div>
-        {(sidebarOpen || window.innerWidth >= 1024) && <Sidebar />}
+        {(sidebarOpen || isLargeScreen) && <Sidebar />}
         <main className="flex-1 p-8 pt-24 lg:ml-64">
           <div className="grid gap-8 md:grid-cols-2">
             <TaskList />
@@ -38,6 +55,5 @@ export default function Dashboard() {
         </main>
       </div>
     </div>
-  )
+  );
 }
-
