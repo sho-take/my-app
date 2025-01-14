@@ -9,7 +9,7 @@ export default function TasksPage() {
       <div className="space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle>タスク一覧</CardTitle>
+            <CardTitle>タス一覧</CardTitle>
           </CardHeader>
           <CardContent>
             <TaskTable />
