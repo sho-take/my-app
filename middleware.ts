@@ -1,17 +1,28 @@
 import { NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  // Supabase の認証トークンを取得
-  const accessToken = request.cookies.get('sb-access-token');
+export async function middleware(request: NextRequest) {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => {
+          return request.cookies.getAll();
+        },
+        setAll: (cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) => {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            NextResponse.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
 
-  console.log("Middleware - Session情報:", {
-    hasSession: !!accessToken,
-    accessToken: accessToken?.value || "なし",
-  });
+  const { data: { session } } = await supabase.auth.getSession();
 
-  // 未ログインなら /login にリダイレクト
-  if (request.nextUrl.pathname === '/' && !accessToken) {
+  if (!session && request.nextUrl.pathname !== '/login') {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -19,5 +30,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/"], // ミドルウェアを適用するルート
+  matcher: ['/', '/dashboard', '/login'], // ミドルウェアを適用するパス
 };
