@@ -1,7 +1,5 @@
-import { Header } from "@/components/header"
-import dynamic from 'next/dynamic'
-
-const Sidebar = dynamic(() => import('@/components/sidebar').then(mod => mod.Sidebar), { ssr: false })
+import { Header } from "@/components/header";
+import { Sidebar } from "@/components/sidebar";  // ← 直接インポート
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,11 +7,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <Header />
       <div className="flex">
         <Sidebar />
-        <main className="flex-1 p-8 pt-24 lg:ml-64">
-          {children}
-        </main>
+        <main className="flex-1 p-8 pt-24 lg:ml-64">{children}</main>
       </div>
     </div>
-  )
+  );
 }
-
