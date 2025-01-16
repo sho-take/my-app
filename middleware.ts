@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
         getAll: () => request.cookies.getAll(),
         setAll: (cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) => {
           cookiesToSet.forEach(({ name, value, options }) => {
-            const cookieString = `${name}=${value}; ${serializeCookieOptions(options)}`;
+            const cookieString = `${name}=${value}; ${serializeCookieOptions(options ?? {})}`;
             response.headers.append('Set-Cookie', cookieString);
           });
         },
