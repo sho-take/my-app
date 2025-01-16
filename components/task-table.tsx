@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -15,19 +15,34 @@ import { EditTaskPopup } from "./edit-task-popup";
 
 export function TaskTable() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   useEffect(() => {
-    const loadTasks = async () => {
-      const data = await fetchTasks();
-      setTasks(data);
+    const loadUserAndTasks = async () => {
+      try {
+        console.log("ユーザー情報を取得中...");
+
+        // ✅ API 経由でユーザー情報を取得
+        const res = await fetch("/api/user");
+        const user = await res.json();
+        console.log("取得したユーザー:", user);
+
+        if (user?.id) {
+          setUserId(user.id); // ✅ ユーザーIDをセット
+          const userTasks = await fetchTasks(user.id); // ✅ ユーザーIDに紐づくタスクを取得
+          setTasks(userTasks);
+        }
+      } catch (error) {
+        console.error("タスクロードエラー:", error);
+      }
     };
-    loadTasks();
+
+    loadUserAndTasks();
   }, []);
 
-  if (tasks.length === 0) {
-    return <p>Loading tasks...</p>;
-  }
+  if (!userId) return <p>ログインしてください</p>;
+  if (tasks.length === 0) return <p>Loading tasks...</p>;
 
   return (
     <>

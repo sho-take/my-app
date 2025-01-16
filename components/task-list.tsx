@@ -3,25 +3,40 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { fetchTasks, Task } from "@/lib/tasks";
+import { fetchTasks, Task } from "@/lib/tasks"; // ✅ タスク取得APIを利用
 
 export function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadTasks = async () => {
-      const data = await fetchTasks();
-      setTasks(data);
+    const loadUserAndTasks = async () => {
+      try {
+        console.log("ユーザー情報を取得中...");
+        
+        // ✅ API 経由でユーザー情報を取得
+        const res = await fetch("/api/user");
+        const user = await res.json();
+        console.log("取得したユーザー:", JSON.stringify(user, null, 2)); // 🔥 オブジェクトの中身を見やすく表示
+
+        if (user?.id) {
+          setUserId(user.id); // ✅ ユーザー ID をセット
+          const userTasks = await fetchTasks(user.id); // ✅ ユーザーのタスクを取得
+          setTasks(userTasks);
+        }
+      } catch (error) {
+        console.error("タスクロードエラー:", error);
+      }
     };
-    loadTasks();
+
+    loadUserAndTasks();
   }, []);
+
+  if (!userId) return <p>ログインしてください</p>;
+  if (tasks.length === 0) return <p>タスクがありません</p>;
 
   // 今後のタスクを取得（最初の3件）
   const upcomingTasks = tasks.slice(0, 3);
-
-  if (tasks.length === 0) {
-    return <p>タスクを読み込み中...</p>;
-  }
 
   return (
     <Card>
