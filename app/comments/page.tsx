@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/utils/supabase/client"; // ✅ Supabaseクライアント
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,17 +13,48 @@ type Comment = {
   content: string;
   timestamp: string;
   avatar: string;
+  user_id: string; // ✅ ユーザーIDを追加
 };
 
 export default function CommentsPage() {
   const [comments, setComments] = useState<Comment[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  // ✅ API経由で `user_id` を取得
   useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        console.log("API へリクエスト開始...");
+        const response = await fetch("/api/user");
+        const data = await response.json();
+        console.log("取得したユーザーデータ:", JSON.stringify(data, null, 2)); // 🔥 デバッグログ追加
+
+        if (data?.id) {
+          setUserId(data.id); // ✅ `id` に統一
+        } else {
+          console.error("API から `id` が返ってこなかった");
+        }
+      } catch (error) {
+        console.error("ユーザー情報の取得に失敗:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserId();
+  }, []);
+
+  // ✅ `userId` を取得したらコメントを取得
+  useEffect(() => {
+    if (!userId) return;
+
     const fetchComments = async () => {
       const { data, error } = await supabase
         .from("comments")
         .select("*")
-        .order("timestamp", { ascending: true });
+        .eq("user_id", userId) // 🔥 ユーザーIDに紐づくコメントのみ取得
+        .order("timestamp", { ascending: false });
 
       if (error) {
         console.error("コメントの取得に失敗しました:", error.message);
@@ -36,14 +67,15 @@ export default function CommentsPage() {
 
     fetchComments();
 
+    // ✅ リアルタイム更新
     const subscription = supabase
       .channel("comments-channel")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "comments" },
+        { event: "*", schema: "public", table: "comments", filter: `user_id=eq.${userId}` },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            setComments((prev) => [...prev, payload.new as Comment]);
+            setComments((prev) => [payload.new as Comment, ...prev]);
           }
         }
       )
@@ -52,7 +84,13 @@ export default function CommentsPage() {
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, []);
+  }, [userId]);
+
+  // ✅ ロード中は「ユーザー情報を取得中...」を表示
+  if (loading) return <p>ユーザー情報を取得中...</p>;
+
+  // ✅ `userId` が `null` なら「ログインしてください」と表示
+  if (!userId) return <p>ログインしてください</p>;
 
   return (
     <Layout>

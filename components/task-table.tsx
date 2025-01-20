@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { fetchTasks, Task } from "@/lib/tasks";
 import { EditTaskPopup } from "./edit-task-popup";
+import { supabase } from "@/utils/supabase/client"; // ✅ Supabase クライアントをインポート
 
 export function TaskTable() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -29,8 +30,8 @@ export function TaskTable() {
         console.log("取得したユーザー:", user);
 
         if (user?.id) {
-          setUserId(user.id); // ✅ ユーザーIDをセット
-          const userTasks = await fetchTasks(user.id); // ✅ ユーザーIDに紐づくタスクを取得
+          setUserId(user.id);
+          const userTasks = await fetchTasks(user.id);
           setTasks(userTasks);
         }
       } catch (error) {
@@ -39,6 +40,32 @@ export function TaskTable() {
     };
 
     loadUserAndTasks();
+
+    // ✅ Supabase のリアルタイムリスナーを設定
+    const subscription = supabase
+      .channel("tasks-channel")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tasks" },
+        (payload) => {
+          console.log("タスクの変更が検出されました:", payload);
+
+          if (payload.eventType === "INSERT") {
+            setTasks((prev) => [...prev, payload.new as Task]); // ✅ 新しいタスクを追加
+          } else if (payload.eventType === "UPDATE") {
+            setTasks((prev) =>
+              prev.map((task) => (task.id === payload.new.id ? (payload.new as Task) : task))
+            ); // ✅ 既存のタスクを更新
+          } else if (payload.eventType === "DELETE") {
+            setTasks((prev) => prev.filter((task) => task.id !== payload.old.id)); // ✅ 削除されたタスクをリストから除外
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
   if (!userId) return <p>ログインしてください</p>;

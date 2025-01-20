@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/server/getUser"; // ✅ サーバー専用の getUser を呼び出す
+import { getUser } from "@/lib/server/getUser";
 
 export async function GET() {
   const user = await getUser();
-  return NextResponse.json(user);
+
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 401 });
+  }
+
+  return NextResponse.json({ id: user.id }); // ✅ `id` キーで統一
 }
