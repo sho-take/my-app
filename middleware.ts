@@ -5,6 +5,9 @@ import type { NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
+  const isCallbackPage = request.nextUrl.pathname.startsWith('/auth/callback'); // 🔥 `/auth/callback` を除外
+  const isLoginPage = request.nextUrl.pathname === '/login';
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -21,18 +24,32 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // セッションの取得
-  const { data: { session } } = await supabase.auth.getSession();
+  // ✅ `/auth/callback` の場合、セッションチェックをスキップ
+  if (isCallbackPage) {
+    return response;
+  }
 
-  // 未ログイン時はログインページへリダイレクト
-  if (!session && request.nextUrl.pathname !== '/login') {
+  // ✅ セッションを取得
+  const {
+    data: { session },
+    error
+  } = await supabase.auth.getSession();
+
+  if (error) {
+    console.error("⚠️ セッションの取得に失敗:", error.message);
+  } else {
+    console.log("✅ セッション取得成功:", session);
+  }
+
+  // 🔥 未ログインなら `/login` へリダイレクト
+  if (!session && !isLoginPage) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   return response;
 }
 
-// クッキーオプションを適切に設定するヘルパー関数
+// ✅ クッキーオプションを適切に設定するヘルパー関数
 function serializeCookieOptions(options: Record<string, unknown>) {
   const parts = [];
   if (options.path) parts.push(`Path=${options.path}`);
@@ -42,6 +59,7 @@ function serializeCookieOptions(options: Record<string, unknown>) {
   return parts.join('; ');
 }
 
+// ✅ `/auth/callback` を除外
 export const config = {
-  matcher: ['/', '/dashboard', '/login'], // ミドルウェアを適用するパス
+  matcher: ['/', '/dashboard', '/login', '/auth/callback'], // 🔥 `/auth/callback` を適用対象に追加
 };

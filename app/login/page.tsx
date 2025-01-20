@@ -1,49 +1,67 @@
-import { login, signup } from './actions';
+"use client";
 
-export default function LoginPage() {
+import { useState } from "react";
+import { supabase } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { signInWithGoogle } from "@/lib/supabase/auth";
+
+const LoginPage = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        setError(`ログインに失敗しました: ${error.message}`);
+      } else {
+        router.push("/");
+      }
+    } catch (err) {
+      console.error("ログインエラー:", err);
+      setError("ログイン処理中にエラーが発生しました");
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center text-gray-800">ログイン</h2>
-        <form className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-            <input 
-              id="email" 
-              name="email" 
-              type="email" 
-              required 
-              className="w-full px-4 py-2 mt-1 border rounded-md focus:ring-blue-500 focus:border-blue-500 border-gray-300"
-              placeholder="Enter your email"
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-            <input 
-              id="password" 
-              name="password" 
-              type="password" 
-              required 
-              className="w-full px-4 py-2 mt-1 border rounded-md focus:ring-blue-500 focus:border-blue-500 border-gray-300"
-              placeholder="Enter your password"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <button 
-              formAction={login} 
-              className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              Log in
-            </button>
-            <button 
-              formAction={signup} 
-              className="w-full px-4 py-2 text-blue-600 bg-white border border-blue-600 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              Sign up
-            </button>
-          </div>
-        </form>
+    <div style={{ maxWidth: "400px", margin: "0 auto", padding: "20px" }}>
+      <h1>ログイン</h1>
+      <form onSubmit={handleLogin}>
+        <input
+          type="email"
+          placeholder="メールアドレス"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          style={{ display: "block", margin: "10px 0", padding: "10px", width: "100%" }}
+        />
+        <input
+          type="password"
+          placeholder="パスワード"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          style={{ display: "block", margin: "10px 0", padding: "10px", width: "100%" }}
+        />
+        <Button type="submit" style={{ width: "100%" }}>ログイン</Button>
+      </form>
+
+      {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
+
+      {/* 🔥 Google ログインボタン（デザイン維持） */}
+      <div style={{ marginTop: "20px", textAlign: "center" }}>
+        <Button onClick={signInWithGoogle} style={{ backgroundColor: "#4285F4", color: "white", width: "100%" }}>
+          Googleでログイン
+        </Button>
       </div>
     </div>
   );
-}
+};
+
+export default LoginPage;

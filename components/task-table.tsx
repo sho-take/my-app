@@ -10,9 +10,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { fetchTasks, Task } from "@/lib/tasks";
+import { fetchTasks, Task, updateTask } from "@/lib/tasks"; // ✅ `updateTask` を追加
+import { supabase } from "@/utils/supabase/client";
 import { EditTaskPopup } from "./edit-task-popup";
-import { supabase } from "@/utils/supabase/client"; // ✅ Supabase クライアントをインポート
 
 export function TaskTable() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -41,7 +41,7 @@ export function TaskTable() {
 
     loadUserAndTasks();
 
-    // ✅ Supabase のリアルタイムリスナーを設定
+    // ✅ Supabase のリアルタイムリスナーを追加
     const subscription = supabase
       .channel("tasks-channel")
       .on(
@@ -51,13 +51,13 @@ export function TaskTable() {
           console.log("タスクの変更が検出されました:", payload);
 
           if (payload.eventType === "INSERT") {
-            setTasks((prev) => [...prev, payload.new as Task]); // ✅ 新しいタスクを追加
+            setTasks((prev) => [...prev, payload.new as Task]);
           } else if (payload.eventType === "UPDATE") {
             setTasks((prev) =>
               prev.map((task) => (task.id === payload.new.id ? (payload.new as Task) : task))
-            ); // ✅ 既存のタスクを更新
+            );
           } else if (payload.eventType === "DELETE") {
-            setTasks((prev) => prev.filter((task) => task.id !== payload.old.id)); // ✅ 削除されたタスクをリストから除外
+            setTasks((prev) => prev.filter((task) => task.id !== payload.old.id));
           }
         }
       )
@@ -67,6 +67,20 @@ export function TaskTable() {
       supabase.removeChannel(subscription);
     };
   }, []);
+
+  // ✅ ステータス変更処理 (Supabase にも反映)
+  const handleTaskUpdate = async (updatedTask: Task) => {
+    try {
+      const updatedTasks = tasks.map((task) =>
+        task.id === updatedTask.id ? updatedTask : task
+      );
+      setTasks(updatedTasks);
+
+      await updateTask(updatedTask); // ✅ Supabase にも更新を適用
+    } catch (error) {
+      console.error("タスクの更新に失敗しました:", error);
+    }
+  };
 
   if (!userId) return <p>ログインしてください</p>;
   if (tasks.length === 0) return <p>Loading tasks...</p>;
@@ -108,20 +122,13 @@ export function TaskTable() {
           ))}
         </TableBody>
       </Table>
+      
       {selectedTask && (
         <EditTaskPopup
           task={selectedTask}
           isOpen={!!selectedTask}
           onClose={() => setSelectedTask(null)}
-          onSave={(updatedTask) => {
-            const index = tasks.findIndex((t) => t.id === updatedTask.id);
-            if (index !== -1) {
-              const updatedTasks = [...tasks];
-              updatedTasks[index] = updatedTask;
-              setTasks(updatedTasks);
-            }
-            setSelectedTask(null);
-          }}
+          onSave={handleTaskUpdate} // ✅ 編集時に Supabase に即時反映
         />
       )}
     </>
