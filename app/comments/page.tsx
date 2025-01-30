@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/utils/supabase/client"; // ✅ Supabaseクライアント
+import { supabase } from "@/lib/supabaseClient";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,7 +13,6 @@ type Comment = {
   content: string;
   timestamp: string;
   avatar: string;
-  user_id: string; // ✅ ユーザーIDを追加
 };
 
 export default function CommentsPage() {
@@ -21,76 +20,38 @@ export default function CommentsPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ API経由で `user_id` を取得
   useEffect(() => {
-    const fetchUserId = async () => {
+    const fetchUserAndComments = async () => {
       try {
-        console.log("API へリクエスト開始...");
-        const response = await fetch("/api/user");
-        const data = await response.json();
-        console.log("取得したユーザーデータ:", JSON.stringify(data, null, 2)); // 🔥 デバッグログ追加
+        // 🔥 API からユーザー情報を取得
+        const res = await fetch("/api/user");
+        const user = await res.json();
+        console.log("取得したユーザー:", user);
 
-        if (data?.id) {
-          setUserId(data.id); // ✅ `id` に統一
-        } else {
-          console.error("API から `id` が返ってこなかった");
-        }
-      } catch (error) {
-        console.error("ユーザー情報の取得に失敗:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+        if (user?.id) {
+          setUserId(user.id);
+          // 🔥 ユーザーIDが取得できたらコメントを取得
+          const { data, error } = await supabase
+            .from("comments")
+            .select("*")
+            .eq("user_id", user.id) // 🔥 ユーザーIDに紐づくコメントだけ取得
+            .order("timestamp", { ascending: true });
 
-    fetchUserId();
-  }, []);
-
-  // ✅ `userId` を取得したらコメントを取得
-  useEffect(() => {
-    if (!userId) return;
-
-    const fetchComments = async () => {
-      const { data, error } = await supabase
-        .from("comments")
-        .select("*")
-        .eq("user_id", userId) // 🔥 ユーザーIDに紐づくコメントのみ取得
-        .order("timestamp", { ascending: false });
-
-      if (error) {
-        console.error("コメントの取得に失敗しました:", error.message);
-      } else if (data && Array.isArray(data)) {
-        setComments(data as Comment[]);
-      } else {
-        console.error("コメントデータが無効です:", data);
-      }
-    };
-
-    fetchComments();
-
-    // ✅ リアルタイム更新
-    const subscription = supabase
-      .channel("comments-channel")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "comments", filter: `user_id=eq.${userId}` },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            setComments((prev) => [payload.new as Comment, ...prev]);
+          if (error) {
+            console.error("コメントの取得に失敗:", error.message);
+          } else {
+            setComments(data || []);
           }
         }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(subscription);
+      } catch (error) {
+        console.error("ユーザー情報取得エラー:", error);
+      } finally {
+        setLoading(false); // 🔥 ロード完了
+      }
     };
-  }, [userId]);
 
-  // ✅ ロード中は「ユーザー情報を取得中...」を表示
-  if (loading) return <p>ユーザー情報を取得中...</p>;
-
-  // ✅ `userId` が `null` なら「ログインしてください」と表示
-  if (!userId) return <p>ログインしてください</p>;
+    fetchUserAndComments();
+  }, []);
 
   return (
     <Layout>
@@ -99,28 +60,37 @@ export default function CommentsPage() {
           <CardTitle>コメント一覧</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            {comments.map((comment) => (
-              <div
-                key={comment.id}
-                className="flex items-start space-x-4 p-4 border-b last:border-b-0"
-              >
-                <Avatar>
-                  <AvatarImage src={comment.avatar} alt={comment.author} />
-                  <AvatarFallback>{comment.author[0]}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">{comment.author}</h3>
-                    <span className="text-sm text-gray-500">{comment.timestamp}</span>
+          {loading ? (
+            <p>ユーザー情報を取得中...</p>
+          ) : !userId ? (
+            <p>ログインしてください</p>
+          ) : comments.length === 0 ? (
+            <p>コメントがありません</p>
+          ) : (
+            <div className="space-y-6">
+              {comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="flex items-start space-x-4 p-4 border-b last:border-b-0"
+                >
+                  <Avatar>
+                    <AvatarImage src={comment.avatar} alt={comment.author} />
+                    <AvatarFallback>{comment.author[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">{comment.author}</h3>
+                      <span className="text-sm text-gray-500">{comment.timestamp}</span>
+                    </div>
+                    <p className="text-sm text-gray-700">{comment.content}</p>
                   </div>
-                  <p className="text-sm text-gray-700">{comment.content}</p>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
+      {/* 🔥 コメント追加フォームはそのまま */}
       <Card className="mt-8">
         <CardHeader>
           <CardTitle>新しいコメントを追加</CardTitle>

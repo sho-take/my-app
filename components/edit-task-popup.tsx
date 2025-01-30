@@ -1,37 +1,45 @@
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Task } from "@/lib/tasks"
+} from "@/components/ui/dialog";
+import { Task, deleteTask } from "@/lib/tasks"; //`deleteTask` をインポート
 
 interface EditTaskPopupProps {
-  task: Task
-  isOpen: boolean
-  onClose: () => void
-  onSave: (updatedTask: Task) => void
+  task: Task;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (updatedTask: Task) => void;
 }
 
 export function EditTaskPopup({ task, isOpen, onClose, onSave }: EditTaskPopupProps) {
-  const [editedTask, setEditedTask] = useState<Task>({ ...task })
+  const [editedTask, setEditedTask] = useState<Task>({ ...task });
 
   const handleSave = () => {
-    onSave(editedTask)
-    onClose()
-  }
+    onSave(editedTask);
+    onClose();
+  };
+
+  //削除処理
+  const handleDelete = async () => {
+    if (confirm("このタスクを削除しますか？")) {
+      await deleteTask(task.id); // Supabase から削除
+      onClose(); // モーダルを閉じる
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -61,7 +69,7 @@ export function EditTaskPopup({ task, isOpen, onClose, onSave }: EditTaskPopupPr
             <Label htmlFor="status">ステータス</Label>
             <Select
               value={editedTask.status}
-              onValueChange={(value) => setEditedTask({ ...editedTask, status: value as Task['status'] })}
+              onValueChange={(value) => setEditedTask({ ...editedTask, status: value as Task["status"] })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="ステータスを選択" />
@@ -74,12 +82,20 @@ export function EditTaskPopup({ task, isOpen, onClose, onSave }: EditTaskPopupPr
             </Select>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>キャンセル</Button>
-          <Button onClick={handleSave}>保存</Button>
+        <DialogFooter className="flex justify-between">
+          {/* 🆕 削除ボタン（左側） */}
+          <Button variant="destructive" onClick={handleDelete}>
+            削除
+          </Button>
+          {/* 「キャンセル」「保存」ボタン（右側） */}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              キャンセル
+            </Button>
+            <Button onClick={handleSave}>保存</Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
-

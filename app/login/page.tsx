@@ -5,11 +5,13 @@ import { supabase } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { signInWithGoogle } from "@/lib/supabase/auth";
+import { SignUpModal } from "@/components/SignUpModal"; 
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSignUpOpen, setIsSignUpOpen] = useState(false); 
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -55,11 +57,21 @@ const LoginPage = () => {
       {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
 
       {/* 🔥 Google ログインボタン（デザイン維持） */}
-      <div style={{ marginTop: "20px", textAlign: "center" }}>
+      <div style={{ marginTop: "10px", textAlign: "center" }}>
         <Button onClick={signInWithGoogle} style={{ backgroundColor: "#4285F4", color: "white", width: "100%" }}>
           Googleでログイン
         </Button>
       </div>
+
+      {/* 🆕 新規登録ボタン */}
+      <div style={{ marginTop: "10px", textAlign: "center" }}>
+        <Button variant="outline" onClick={() => setIsSignUpOpen(true)} style={{ width: "100%" }}>
+          新規登録
+        </Button>
+      </div>
+
+      {/* 🆕 新規登録モーダル */}
+      <SignUpModal isOpen={isSignUpOpen} onClose={() => setIsSignUpOpen(false)} />
     </div>
   );
 };

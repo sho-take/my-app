@@ -59,7 +59,7 @@ export function TaskList() {
     };
   }, []);
 
-  if (!userId) return <p>ログインしてください</p>;
+  if (!userId) return <p>ユーザー情報を取得中</p>;
   if (tasks.length === 0) return <p>タスクがありません</p>;
 
   // 今後のタスクを取得（最初の3件）

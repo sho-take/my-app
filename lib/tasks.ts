@@ -13,7 +13,8 @@ export async function fetchTasks(userId: string): Promise<Task[]> {
   const { data, error } = await supabase
     .from("tasks")
     .select("*")
-    .eq("user_id", userId); // 🔥 ユーザーIDが一致するものだけ取得
+    .eq("user_id", userId) // 🔥 ユーザーIDが一致するものだけ取得
+    .order("deadline", { ascending: true });
 
   if (error) {
     console.error("タスクの取得に失敗しました:", error.message);
