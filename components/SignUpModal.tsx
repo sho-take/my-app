@@ -31,7 +31,7 @@ export function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`, // 🔥 認証後のリダイレクト先
+          emailRedirectTo: `${window.location.origin}/auth/callback`, // 認証後のリダイレクト先
         },
       });
 
@@ -41,6 +41,7 @@ export function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
         setMessage("確認メールを送信しました。メールを確認してください！");
       }
     } catch (err) {
+      console.error("登録エラー:", err);
       setMessage("エラーが発生しました。");
     }
   };
