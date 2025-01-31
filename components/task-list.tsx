@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { fetchTasks, Task } from "@/lib/tasks";
-import { supabase } from "@/utils/supabase/client"; // ✅ Supabase クライアントをインポート
+import { fetchTasks, Task } from "@/lib/tasks"; // ✅ タスク取得APIを利用
 
 export function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -14,7 +13,7 @@ export function TaskList() {
     const loadUserAndTasks = async () => {
       try {
         console.log("ユーザー情報を取得中...");
-
+        
         // ✅ API 経由でユーザー情報を取得
         const res = await fetch("/api/user");
         const user = await res.json();
@@ -31,39 +30,13 @@ export function TaskList() {
     };
 
     loadUserAndTasks();
-
-    // ✅ Supabase リアルタイムリスナーを追加
-    const subscription = supabase
-      .channel("tasks-channel")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "tasks" },
-        (payload) => {
-          console.log("タスクの変更が検出されました:", payload);
-
-          if (payload.eventType === "INSERT") {
-            setTasks((prev) => [...prev, payload.new as Task]); // ✅ 新しいタスクを追加
-          } else if (payload.eventType === "UPDATE") {
-            setTasks((prev) =>
-              prev.map((task) => (task.id === payload.new.id ? (payload.new as Task) : task))
-            ); // ✅ 既存のタスクを更新
-          } else if (payload.eventType === "DELETE") {
-            setTasks((prev) => prev.filter((task) => task.id !== payload.old.id)); // ✅ 削除されたタスクを除外
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(subscription);
-    };
   }, []);
 
-  if (!userId) return <p>ユーザー情報を取得中</p>;
+  if (!userId) return <p>ログインしてください</p>;
   if (tasks.length === 0) return <p>タスクがありません</p>;
 
-  // 今後のタスクを取得（最初の3件）
-  const upcomingTasks = tasks.slice(0, 3);
+  // 🔥 「完了」以外のタスクを取得（フロントエンドでフィルタリング）
+  const upcomingTasks = tasks.filter(task => task.status !== "完了").slice(0, 3);
 
   return (
     <Card>

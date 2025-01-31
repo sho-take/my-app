@@ -43,7 +43,7 @@ export function Header() {
   return (
     <header className="bg-blue-600 text-white p-4 pl-72 flex flex-wrap justify-between items-center gap-4">
       <h1 className="text-xl font-bold whitespace-nowrap">
-        ゼミ進捗管理ツールへようこそ
+        タスク管理ツールへようこそ
       </h1>
       <div className="flex items-center gap-4">
         <span className="text-lg font-semibold">
